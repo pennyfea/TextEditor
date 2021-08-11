@@ -7,5 +7,6 @@
         <file>help-browser.svg</file>
         <file>document-save-as.svg</file>
         <file>document-new.svg</file>
+        <file>preferences-system-session.svg</file>
     </qresource>
 </RCC>

@@ -1,6 +1,7 @@
 #include "texteditor.h"
 #include "./ui_texteditor.h"
 #include <iostream>
+
 TextEditor::TextEditor(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::TextEditor)
@@ -20,6 +21,10 @@ TextEditor::TextEditor(QWidget *parent)
     connect(m_texteditor->document(),  &QTextDocument::contentsChanged, this, &TextEditor::documentWasModified);
     connect(ui->actionSave_As, &QAction::triggered, this, &TextEditor::askToSave);
     connect(ui->actionExit, &QAction::triggered, [](){  QApplication::quit();});
+    connect(ui->actionConfigure_Text_Editor, &QAction::triggered, this, &TextEditor::actionConfigure_triggered);
+
+
+    this->restoreGeometry(Settings::GetInstance().value("geometry").toByteArray());
 }
 
 TextEditor::~TextEditor()
@@ -43,7 +48,7 @@ void TextEditor::actionOpen_triggered()
 
 void TextEditor::actionAbout_triggered()
 {
-    const QString projectInfo = QStringLiteral("Project Name: %1\nVersion: %2\nUsing QT: %3").arg(PROJECT_NAME).arg(TextEditor_VERSION).arg(QT_VERSION_MAJOR);
+    const QString projectInfo = QStringLiteral("Project Name: %1\nVersion: %2\nUsing QT: %3").arg(PROJECT_NAME).arg(TextEditor_VERSION).arg(QT_VERSION_STR);
     QMessageBox msgBox(this);
     msgBox.setWindowTitle("About Text Editor");
     msgBox.setText(projectInfo);
@@ -146,3 +151,71 @@ QString TextEditor::strippedName(const QString &fullFileName)
     return QFileInfo(fullFileName).fileName();
 }
 
+void TextEditor::actionConfigure_triggered()
+{
+    QCheckBox *checkbox = new QCheckBox("Cursor to end of file");
+    QCheckBox *geometryCheckBox = new QCheckBox("Save and restore geometry");
+    QMessageBox msgBox(this);
+    msgBox.setStandardButtons(QMessageBox::Apply | QMessageBox::Discard | QMessageBox::Reset | QMessageBox::RestoreDefaults);
+    msgBox.setDefaultButton(QMessageBox::Apply);
+    checkbox->setToolTip("Option to move cursor to end of text on file open");
+    geometryCheckBox->setToolTip("Option to save and restore geometry on open / close");
+    msgBox.setCheckBox(checkbox);
+
+    QGridLayout *grid = qobject_cast<QGridLayout *>(msgBox.layout());
+    int index = grid->indexOf(checkbox);
+    int row, column, rowSpan, columnSpan;
+    grid->getItemPosition(index, &row, &column, &rowSpan, &columnSpan);
+    grid->addWidget(geometryCheckBox, row + 1,  column, rowSpan, columnSpan);
+
+    static bool checkGeometry = false;
+    QObject::connect(geometryCheckBox, &QCheckBox::stateChanged, [&](int state){
+        if (static_cast<Qt::CheckState>(state) == Qt::CheckState::Checked) {
+            checkGeometry = true;
+        }
+        else{
+            checkGeometry = false;
+        }
+    });
+
+    static bool changeCursor = false;
+    QObject::connect(checkbox, &QCheckBox::stateChanged, [&](int state){
+        if (static_cast<Qt::CheckState>(state) == Qt::CheckState::Checked) {
+            changeCursor = true;
+        }
+        else{
+            changeCursor = false;
+        }
+    });
+
+
+    int ret = msgBox.exec();
+    switch (ret) {
+      case QMessageBox::Apply:
+          if (checkGeometry)
+            Settings::GetInstance().setValue("geometry", saveGeometry());
+          else
+            Settings::GetInstance().removeSettings("geometry");
+          if (changeCursor)
+              m_texteditor->moveCursor(QTextCursor::End);
+          break;
+      case QMessageBox::Discard:
+          // Don't Save was clicked
+          Settings::GetInstance().removeSettings("geometry");
+          msgBox.close();
+          break;
+      case QMessageBox::Reset:
+          Settings::GetInstance().removeSettings("geometry");
+          // Cancel was clicked
+          break;
+      case QMessageBox::RestoreDefaults:
+        // Restore defaults
+        Settings::GetInstance().removeSettings("geometry");
+        restoreGeometry(Settings::GetInstance().value("geometry").toByteArray());
+        resize(485,491);
+        break;
+      default:
+          // should never be reached
+          break;
+    }
+}

@@ -7,7 +7,10 @@
 #include <QMessageBox>
 #include <QString>
 #include <QStandardPaths>
-#include "src/textEditorConfig.h"
+#include <QCheckBox>
+#include <QGridLayout>
+#include "settings.h"
+#include "textEditorConfig.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class TextEditor; }
@@ -21,11 +24,15 @@ public:
     TextEditor(QWidget *parent = nullptr);
     ~TextEditor();
 
+protected:
+ //   void closeEvent(QCloseEvent *event) override;
+
 private slots:
     void actionOpen_triggered();
     void actionAbout_triggered();
     void actionSave_triggered();
     void actionNew_triggered();
+    void actionConfigure_triggered();
     void askToSave();
     void documentWasModified();
 
