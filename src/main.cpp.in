@@ -1,14 +1,15 @@
-#include "texteditor.h"
-
 #include <QApplication>
 #include <QLocale>
 #include <QTranslator>
+#include "src/texteditor.h"
+
 
 int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
-
-    //QIcon::setFallbackSearchPaths(QIcon::fallbackSearchPaths() << ":icons/");
+    a.setApplicationName(QObject::tr("@CMAKE_PROJECT_NAME@"));
+    a.setApplicationVersion(QStringLiteral("@CMAKE_PROJECT_VERSION@"));
+    QIcon::setFallbackSearchPaths(QIcon::fallbackSearchPaths() << QStringLiteral(":icons"));
 
     QTranslator translator;
     const QStringList uiLanguages = QLocale::system().uiLanguages();
@@ -19,7 +20,6 @@ int main(int argc, char *argv[])
             break;
         }
     }
-
 
     TextEditor w;
     w.show();

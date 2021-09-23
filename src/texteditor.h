@@ -9,8 +9,8 @@
 #include <QStandardPaths>
 #include <QCheckBox>
 #include <QGridLayout>
+#include <iostream>
 #include "settings.h"
-#include "textEditorConfig.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class TextEditor; }

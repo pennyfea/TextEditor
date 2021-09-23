@@ -5,7 +5,6 @@
 #include <QObject>
 #include <QSettings>
 #include <QFile>
-#include "textEditorConfig.h"
 
 class Settings : public QObject
 {

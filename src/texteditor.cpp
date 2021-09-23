@@ -1,6 +1,5 @@
 #include "texteditor.h"
 #include "./ui_texteditor.h"
-#include <iostream>
 
 TextEditor::TextEditor(QWidget *parent)
     : QMainWindow(parent)
@@ -48,7 +47,7 @@ void TextEditor::actionOpen_triggered()
 
 void TextEditor::actionAbout_triggered()
 {
-    const QString projectInfo = QStringLiteral("Project Name: %1\nVersion: %2\nUsing QT: %3").arg(PROJECT_NAME).arg(TextEditor_VERSION).arg(QT_VERSION_STR);
+    const QString projectInfo = QStringLiteral("Project Name: %1\nVersion: %2\nUsing QT: %3").arg(qAppName()).arg(qApp->applicationVersion()).arg(qVersion());
     QMessageBox msgBox(this);
     msgBox.setWindowTitle("About Text Editor");
     msgBox.setText(projectInfo);
@@ -101,7 +100,7 @@ void TextEditor::saveFile(const QString &fileName)
         return;
      }
     QTextStream out(&file);
-    out << m_texteditor->toPlainText();
+    out << m_texteditor->toPlainText().toLocal8Bit();
     setCurrentFile(file.fileName());
 }
 

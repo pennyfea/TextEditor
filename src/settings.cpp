@@ -20,7 +20,7 @@ void Settings::initSettings()
          QSettings::IniFormat);
     } else{
          settings = new QSettings(QSettings::NativeFormat,  QSettings::UserScope,
-            QStringLiteral(PROJECT_NAME), QStringLiteral("settings"), nullptr);
+            QStringLiteral("PROJECT_NAME"), QStringLiteral("settings"), nullptr);
     }
 }
 
