@@ -5,17 +5,32 @@
 #include <QObject>
 #include <QSettings>
 #include <QFile>
+#include <QVariant>
+
+
+class QSettings;
+
+namespace SETTINGS {
+    inline const static QString MAINGEOMETRY = QStringLiteral("MainGeometry");
+    inline const static QString MOVECURSORONLOAD = QStringLiteral("editor/moveCursorOnLoad");
+    inline const static QString REMEMBERGEOMETRY = QStringLiteral("RememberGeometry");
+
+    inline static auto VALIDKEYS = QStringList {
+            SETTINGS::MAINGEOMETRY
+            , SETTINGS::MOVECURSORONLOAD
+            , SETTINGS::REMEMBERGEOMETRY
+    };
+}
 
 class Settings : public QObject
 {
     Q_OBJECT
 public:
      static Settings& GetInstance();
-     void setValue(const QString& setting = QString(), const QVariant& value = QVariant());
-     QVariant value(const QString& setting = QString(), const QVariant& defaultValue = QVariant());
-     void removeSettings(const QString &key);
+     void setValue(const QString& key = QString(), const QVariant& value = QVariant());
+     QVariant value(const QString& key = QString(), const QVariant& defaultValue = QVariant());
      int  count();
-     void cleanSettings();
+
 
 signals:
     void settingsChanged();
@@ -26,7 +41,9 @@ private:
     Settings(const Settings&) = delete;
     ~Settings() = default;
     void initSettings();
-    QSettings* settings = nullptr;
+    void cleanSettings();
+    void removeSettings(const QString &key);
+    QSettings* m_settings = nullptr;
 };
 
 #endif // SETTINGS_H

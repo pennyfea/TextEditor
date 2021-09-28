@@ -14,52 +14,54 @@ Settings& Settings::GetInstance()
 
 void Settings::initSettings()
 {
-    if (QFile(QStringLiteral("%1/settings.ini").arg(QCoreApplication::applicationDirPath())).exists())
-    {
-         settings = new QSettings(QStringLiteral("%1/settings.ini").arg(QCoreApplication::applicationDirPath()),
+    if (QFile(QStringLiteral("%1/settings.ini").arg(QCoreApplication::applicationDirPath())).exists()) {
+         m_settings = new QSettings(QStringLiteral("%1/settings.ini").arg(QCoreApplication::applicationDirPath()),
          QSettings::IniFormat);
-    } else{
-         settings = new QSettings(QSettings::NativeFormat,  QSettings::UserScope,
-            QStringLiteral("PROJECT_NAME"), QStringLiteral("settings"), nullptr);
+    } else {
+         m_settings = new QSettings(QSettings::NativeFormat,  QSettings::UserScope,
+            QStringLiteral("texteditor"), QStringLiteral("settings"), nullptr);
     }
+    QTextStream(stdout) << "Settings file in use: " << m_settings->fileName();
 }
 
-void Settings::setValue(const QString &setting, const QVariant &value)
+void Settings::setValue(const QString &key, const QVariant &value)
 {
-   if (settings->value(setting) == value)
+   if(key.isEmpty())
+        return;
+   if (m_settings->value(key) == value)
        return;
    if (value.isNull())
-       settings->remove(setting);
+       m_settings->remove(key);
    else
-       settings->setValue(setting, value);
-   emit settingsChanged();
-
-   settings->sync();
+       m_settings->setValue(key, value);
+    m_settings->sync();
+    emit settingsChanged();
 }
 
 QVariant Settings::value(const QString &setting, const QVariant &defaultValue)
 {
-   return settings->value(setting, defaultValue);
+   return m_settings->value(setting, defaultValue);
 }
 
 void Settings::cleanSettings()
 {
-    QStringList keys = settings->allKeys();
-    foreach (const QString &key, keys)
-    {
-        if (key.isEmpty() || key.contains(" "))
-            settings->remove(key);
+    const QStringList keys = m_settings->allKeys();
+    for(const QString &key : keys) {
+        if (!SETTINGS::VALIDKEYS.contains(key))
+            m_settings->remove(key);
+        if (m_settings->value(key).isNull() && !m_settings->value(key).isValid())
+            m_settings->remove(key);
     }
 }
 
 void Settings::removeSettings(const QString &key)
 {
-    settings->remove(key);
+    m_settings->remove(key);
 }
 
 int Settings::count()
 {
-    QStringList keys = settings->allKeys();
+    QStringList keys = m_settings->allKeys();
     QStringListIterator it(keys);
     while (it.hasNext())
         qDebug() << it.next();

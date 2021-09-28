@@ -5,8 +5,11 @@ target_sources(libTEXTEDITOR PRIVATE
     texteditor.cpp
     texteditor.h
     texteditor.ui
-    settings.cpp
     settings.h
+    settings.cpp
+    settingsdialog.h
+    settingsdialog.cpp
+    settingsdialog.ui
 )
 
 target_link_libraries(libTEXTEDITOR PUBLIC Qt6::Widgets)

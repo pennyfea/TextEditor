@@ -8,9 +8,8 @@ TextEditor::TextEditor(QWidget *parent)
     , m_texteditor(new QTextEdit(this))
 {
     ui->setupUi(this);
+    setAcceptDrops(true);
     setWindowIcon(QIcon(":/icons/accessories-text-editor.svg"));
-    setWindowTitle(m_title);
-    setCurrentFile(QString());
     setCentralWidget(m_texteditor);
 
     connect(ui->actionOpen, &QAction::triggered, this, &TextEditor::actionOpen_triggered);
@@ -18,7 +17,7 @@ TextEditor::TextEditor(QWidget *parent)
     connect(ui->actionSave, &QAction::triggered, this, &TextEditor::actionSave_triggered);
     connect(ui->actionNew, &QAction::triggered, this, &TextEditor::actionNew_triggered);
     connect(m_texteditor->document(),  &QTextDocument::contentsChanged, this, &TextEditor::documentWasModified);
-    connect(ui->actionSave_As, &QAction::triggered, this, &TextEditor::askToSave);
+    connect(ui->actionSave_As, &QAction::triggered, this, &TextEditor::saveFileAs);
     connect(ui->actionExit, &QAction::triggered, [](){  QApplication::quit();});
     connect(ui->actionConfigure_Text_Editor, &QAction::triggered, this, &TextEditor::actionConfigure_triggered);
 
@@ -34,15 +33,8 @@ TextEditor::~TextEditor()
 
 void TextEditor::actionOpen_triggered()
 {
-    QString fileName = QFileDialog::getOpenFileName(this, tr("Open File"),
-                                                    QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation),
-                                                    tr("Text Files(*.txt)"));
-    if (fileName.isEmpty())
-        return;
-    if (m_curFile == fileName)
-        return;
-    m_texteditor->clear();
-    loadFile(fileName);
+    QUrl fileUrl = QFileDialog::getOpenFileUrl(this, tr("Open File"), QUrl::fromLocalFile(QDir::homePath()), m_fileFilter, &m_textFilter);
+    openFile(fileUrl);
 }
 
 void TextEditor::actionAbout_triggered()
@@ -58,163 +50,105 @@ void TextEditor::actionAbout_triggered()
 void TextEditor::actionNew_triggered()
 {
     m_texteditor->clear();
-    setCurrentFile(QString());
+    setWindowTitle(QString());
 }
 
 void TextEditor::actionSave_triggered()
 {
-    QString fileName;
-    if (fileExists(m_curFile))
-    {
-        fileName = m_curFile;
-        saveFile(fileName);
-    }
-    else
-    {
-        askToSave();
-    }
+    saveFile();
 }
 
-void TextEditor::askToSave()
+void TextEditor::actionConfigure_triggered()
 {
-    QString fileName;
-    fileName = QFileDialog::getSaveFileName(this, tr("Save File"),
-                                               QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation),
-                                               tr("Text Files(*.txt)"));
-
-    saveFile(fileName);
+    SettingsDialog dialog(this);
+    dialog.exec();
 }
 
-void TextEditor::updateTitle(const QString &filename)
+void TextEditor::writeFile(const QUrl &fileUrl)
 {
-    QString _filename =  QString(" - " +  strippedName(filename));
-    setWindowTitle(m_title + _filename + "[*]");
-}
-
-void TextEditor::saveFile(const QString &fileName)
-{
-    QFile file(fileName);
+    if (fileUrl.isEmpty())
+         return;
+    QFile file(fileUrl.toLocalFile());
     if (!file.open(QIODevice::WriteOnly)){
         QMessageBox::information(this, tr("Unable to open file"),
         file.errorString());
         return;
      }
-    QTextStream out(&file);
-    out << m_texteditor->toPlainText().toLocal8Bit();
-    setCurrentFile(file.fileName());
+    file.write(m_texteditor->toPlainText().toLocal8Bit());
+    file.close();
+    m_currentOpenUrl = fileUrl;
+    setWindowModified(false);
+    updateTitle();
 }
 
-bool TextEditor::fileExists(const QString &path)
+void TextEditor::saveFileAs()
 {
-    QFileInfo checkFile(path);
-    return checkFile.exists() && checkFile.isFile();
+    QUrl fileUrl = QFileDialog::getSaveFileUrl(this, tr("Save File"), QUrl::fromLocalFile(QDir::homePath()), m_fileFilter, &m_textFilter);
+    writeFile(fileUrl);
 }
 
-
-void TextEditor::loadFile(const QString &fileName)
+void TextEditor::updateTitle()
 {
-    QFile file(fileName);
-    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)){
-        QMessageBox::information(this, tr("Unable to open file"),
-        file.errorString());
+    QString title = m_title;
+    if(!m_currentOpenUrl.fileName().isEmpty())
+        title.append(QStringLiteral(" - %2").arg(m_currentOpenUrl.fileName()));
+    if(m_texteditor->document()->isModified())
+        title.append("[*]");
+    setWindowTitle(title);
+}
+
+void TextEditor::saveFile()
+{
+    if (m_currentOpenUrl.isEmpty()){
+        saveFileAs();
         return;
     }
-    while (!file.atEnd()) {
-         QByteArray line = file.readLine();
-         m_texteditor->append(line);
-     }
-    setCurrentFile(file.fileName());
+    writeFile(m_currentOpenUrl);
 }
 
-
-void TextEditor::setCurrentFile(const QString &fileName)
+void TextEditor::openFile(const QUrl &fileUrl)
 {
-        m_curFile = fileName;
-        m_texteditor->document()->setModified(false);
-        setWindowModified(false);
+    if (fileUrl.isEmpty())
+          return;
 
-        QString shownName = m_curFile;
-        qDebug() << shownName;
-        if (m_curFile.isEmpty())
-            shownName = "untitled.txt";
-        updateTitle(shownName);
+    QFile file(fileUrl.toLocalFile());
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+          QMessageBox::information(this, tr("Unable to open file"),
+          file.errorString());
+          return;
+    }
+
+    m_currentOpenUrl = fileUrl;
+    QTextStream textFile(&file);
+    m_texteditor->setText(textFile.readAll());
+    if (Settings::GetInstance().value(SETTINGS::MOVECURSORONLOAD, true).toBool())
+            m_texteditor->moveCursor(QTextCursor::End, QTextCursor::MoveAnchor);
+    setWindowTitle(QStringLiteral("%1 - %2").arg(qApp->applicationName(), fileUrl.fileName()));//
 }
 
 void TextEditor::documentWasModified()
 {
+    updateTitle();
     setWindowModified(m_texteditor->document()->isModified());
+
 }
 
-QString TextEditor::strippedName(const QString &fullFileName)
+void TextEditor::dragEnterEvent(QDragEnterEvent *e)
 {
-    return QFileInfo(fullFileName).fileName();
+    if (e->mimeData()->hasUrls())
+        e->acceptProposedAction();
+    else
+        e->ignore();
 }
 
-void TextEditor::actionConfigure_triggered()
+void TextEditor::dropEvent(QDropEvent *e)
 {
-    QCheckBox *checkbox = new QCheckBox("Cursor to end of file");
-    QCheckBox *geometryCheckBox = new QCheckBox("Save and restore geometry");
-    QMessageBox msgBox(this);
-    msgBox.setStandardButtons(QMessageBox::Apply | QMessageBox::Discard | QMessageBox::Reset | QMessageBox::RestoreDefaults);
-    msgBox.setDefaultButton(QMessageBox::Apply);
-    checkbox->setToolTip("Option to move cursor to end of text on file open");
-    geometryCheckBox->setToolTip("Option to save and restore geometry on open / close");
-    msgBox.setCheckBox(checkbox);
+    openFile(e->mimeData()->urls().at(0));
+}
 
-    QGridLayout *grid = qobject_cast<QGridLayout *>(msgBox.layout());
-    int index = grid->indexOf(checkbox);
-    int row, column, rowSpan, columnSpan;
-    grid->getItemPosition(index, &row, &column, &rowSpan, &columnSpan);
-    grid->addWidget(geometryCheckBox, row + 1,  column, rowSpan, columnSpan);
-
-    static bool checkGeometry = false;
-    QObject::connect(geometryCheckBox, &QCheckBox::stateChanged, [&](int state){
-        if (static_cast<Qt::CheckState>(state) == Qt::CheckState::Checked) {
-            checkGeometry = true;
-        }
-        else{
-            checkGeometry = false;
-        }
-    });
-
-    static bool changeCursor = false;
-    QObject::connect(checkbox, &QCheckBox::stateChanged, [&](int state){
-        if (static_cast<Qt::CheckState>(state) == Qt::CheckState::Checked) {
-            changeCursor = true;
-        }
-        else{
-            changeCursor = false;
-        }
-    });
-
-
-    int ret = msgBox.exec();
-    switch (ret) {
-      case QMessageBox::Apply:
-          if (checkGeometry)
-            Settings::GetInstance().setValue("geometry", saveGeometry());
-          else
-            Settings::GetInstance().removeSettings("geometry");
-          if (changeCursor)
-              m_texteditor->moveCursor(QTextCursor::End);
-          break;
-      case QMessageBox::Discard:
-          // Don't Save was clicked
-          Settings::GetInstance().removeSettings("geometry");
-          msgBox.close();
-          break;
-      case QMessageBox::Reset:
-          Settings::GetInstance().removeSettings("geometry");
-          // Cancel was clicked
-          break;
-      case QMessageBox::RestoreDefaults:
-        // Restore defaults
-        Settings::GetInstance().removeSettings("geometry");
-        restoreGeometry(Settings::GetInstance().value("geometry").toByteArray());
-        resize(485,491);
-        break;
-      default:
-          // should never be reached
-          break;
-    }
+void TextEditor::closeEvent(QCloseEvent *e)
+{
+    Q_UNUSED(e);
+    bool saveGeo = Settings::GetInstance().value(SETTINGS::REMEMBERGEOMETRY, true).toBool();
+    Settings::GetInstance().setValue(SETTINGS::MAINGEOMETRY) , saveGeo ? QVariant(saveGeometry()) : QVariant();
 }
