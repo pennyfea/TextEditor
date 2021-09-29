@@ -1,4 +1,4 @@
-find_package(Qt6 COMPONENTS Widgets REQUIRED)
+find_package(Qt6 COMPONENTS Widgets Core Gui REQUIRED)
 
 add_library(libTEXTEDITOR STATIC "")
 target_sources(libTEXTEDITOR PRIVATE
@@ -12,4 +12,4 @@ target_sources(libTEXTEDITOR PRIVATE
     settingsdialog.ui
 )
 
-target_link_libraries(libTEXTEDITOR PUBLIC Qt6::Widgets)
+target_link_libraries(libTEXTEDITOR PUBLIC Qt6::Widgets Qt6::Core Qt6::Gui)
