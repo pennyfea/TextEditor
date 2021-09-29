@@ -64,6 +64,6 @@ int Settings::count()
     QStringList keys = m_settings->allKeys();
     QStringListIterator it(keys);
     while (it.hasNext())
-        qDebug() << it.next();
+        it.next();
     return keys.size();
 }

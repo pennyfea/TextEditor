@@ -11,6 +11,7 @@
 #include <QDragEnterEvent>
 #include <QMimeData>
 #include <QUrl>
+#include <QTextStream>
 
 #include "settings.h"
 #include "settingsdialog.h"
