@@ -1,6 +1,6 @@
 # This is a basic workflow to help you get started with Actions
 
-name: CI
+name: "CI/CD"
 
 # Controls when the workflow will run
 on:
@@ -13,24 +13,137 @@ on:
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
+#  Sets default environment variables for each GitHub Actions workflow run.
+env:
+  QT_VERSION: 5.15.2
+  BUILD_TYPE: Release
+  packageGlob: TextEditor-continuous-*.*
+
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
   # This workflow contains a single job called "build"
   build:
+    name: ${{ matrix.config.name }}
     # The type of runner that the job will run on
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.config.os }}
+
+    # This allows the workflow to run tests across multiple combinations of operating systems, platforms, and languages.
+    strategy:
+      fail-fast: false
+      matrix:
+        config:
+          - {
+              name: "Linux-amd64",
+              os: ubuntu-18.04,
+              QT_INST_DIR: /opt,
+              bcInstallPrefix: /usr,
+              cpack_generator: cpack,
+              package_name: appdir,
+              rename_package: "mv TextEditor-continuous-*.tar.xz TextEditor-continuous-linux-x86_64.tar.xz"
+            }
+          - {  
+              name: "MacOS-amd64",
+              os: macos-latest,
+              QT_INST_DIR: /Users/runner,
+              package_name: TextEditor-macos,
+              cpack_generator: cpack -G DragNDrop,
+              rename_package: "mv TextEditor-continuous-*.dmg TextEditor-continuous-macos.dmg"
+            }
+          - {
+              name: "Windows-x64",
+              WIN_ARCH: "x64",
+              os: windows-latest,
+              QT_INST_DIR: "C:/", QTDIR: "C:/Qt/5.15.2/msvc2019_64", QT_ARCH: win64_msvc2019_64,
+              install_depends: "choco install ninja",
+              cmake_extra_options: "-G Ninja",
+              cpack gnereator: "cpack",
+              bcInstallPrefix: TextEditor-continuous,
+              package_name: TextEditor-win64,
+              rename_package: "mv TextEditor-*.zip TextEditor-continuous-win64.zip"
+            }
+          - {
+              name: "Windows-x86", 
+              WIN_ARCH: "amd64_x86",
+              os: windows-latest,
+              QT_INST_DIR: "C:/", QTDIR: "C:/Qt/5.15.2/msvc2019_64", QT_ARCH: win32_msvc2019,
+              install_depends: "choco install ninja",
+              cmake_extra_options: "-G Ninja",
+              cpack gnereator: "cpack",
+              bcInstallPrefix: TextEditor-continuous,
+              package_name: TextEditor-win32,
+              rename_package: "ls -R && mv TextEditor-*.zip TextEditor-continuous-win32.zip"
+            }
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - uses: actions/checkout@v2
+      - name: Checkout default branch 
+        uses: actions/checkout@v2
+        with:
+          ref: main
 
-      # Runs a single command using the runners shell
-      - name: Run a one-line script
-        run: echo Hello, world!
+      # This sets up the environment for compiling C/C++ code from command line. Supports Windows
+      - name: Env Script (Windows)
+        uses: ilammy/msvc-dev-cmd@v1
+        if: runner.os == 'Windows'
+        with:
+          arch: ${{matrix.config.WIN_ARCH}}
+      
+      # Install Qt on your Github Actions workflows
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v2.14.0
+        with:
+          dir: ${{matrix.config.QT_INST_DIR}}
+          arch: ${{matrix.config.QT_ARCH}}
+          version: ${{env.QT_VERSION}}
 
-      # Runs a set of commands using the runners shell
-      - name: Run a multi-line script
+      # Runs a set of commands using the runners shell to execute the build process
+      - name: Build TextEditior
         run: |
-          echo Add other actions to build,
-          echo test, and deploy your project.
+          cmake -S. ${{matrix.config.cmake_extra_Options}} -DCMAKE_INSTALL_PREFIX=${{matrix.config.bcInstallPrefix}} -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} 
+          cmake --build . --config ${{env.BUILD_TYPE}}
+          cmake --install . --prefix ${{matrix.config.package_name}}
+      
+      # Run cpack from the runnser shell
+      - name: CPack
+        run: ${{matrix.config.cpack_generator}}
+
+      # Build an appinmge using linuxdeployqt
+      - name: Build AppImage (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          wget -c "https://github.com/probonopd/linuxdeployqt/releases/download/continuous/linuxdeployqt-continuous-x86_64.AppImage"
+          export VERSION=continuous
+          chmod a+x linuxdeployqt*.AppImage
+          unset QTDIR; unset QT_PLUGIN_PATH; unset LD_LIBRARY_PATH
+          ./linuxdeployqt*.AppImage ./appdir/share/applications/*.desktop -appimage -extra-plugins=iconengines,platformthemes/libqxdgdesktopportal.so
+
+      - name: Prepare Upload
+        shell: bash
+        run: ${{matrix.config.rename_package}}
+
+      - name: Upload
+        uses: actions/upload-artifact@v2
+        with:
+          path: ${{ github.workspace }}/${{env.packageGlob}} 
+
+  Releases:
+    name: Release
+    needs: build
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+    - name: Download Files
+      uses: actions/download-artifact@v2
+
+    - name: Move Files
+      run: |
+        mv artifact/* ${{github.workspace}}
+    - name: Deploy Package
+      uses: "marvinpinto/action-automatic-releases@latest"
+      with:
+        repo_token: "${{ secrets.DEPLOYTOKEN }}"
+        automatic_release_tag: "v1.0.0"
+        prerelease: false
+        title: "Continuous Build"
+        files: ${{env.packageGlob}}

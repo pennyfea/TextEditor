@@ -11,6 +11,8 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+find_package(Qt6 COMPONENTS Widgets)
+
 add_subdirectory(src)
 
 configure_file(src/main.cpp.in main.cpp @ONLY)
@@ -36,10 +38,6 @@ set_target_properties(TextEditor PROPERTIES
     MACOSX_BUNDLE_BUNDLE_VERSION ${PROJECT_VERSION}
     MACOSX_BUNDLE_SHORT_VERSION_STRING ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}
 )
-
-target_include_directories(TextEditor PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
-
-message("CMAKE_CURRENT_SOURCE_DIR" "${CMAKE_CURRENT_SOURCE_DIR}/src")
 
 ##CPack
 get_target_property(_qmake_executable Qt6::qmake IMPORTED_LOCATION)
