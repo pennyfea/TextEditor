@@ -33,45 +33,43 @@ jobs:
       matrix:
         config:
           - {
-              name: "Linux-amd64",
-              os: ubuntu-18.04,
-              QT_INST_DIR: /opt,
-              bcInstallPrefix: /usr,
-              cpack_generator: cpack,
-              package_name: appdir,
-              rename_package: "mv TextEditor-continuous-*.tar.xz TextEditor-continuous-linux-x86_64.tar.xz"
+              name: "Linux-amd64"
+              , os: ubuntu-18.04
+              , QT_INST_DIR: /opt 
+              , bcInstallPrefix: /usr
+              , cpack_generator: cpack
+              , package_name: appdir
+              , rename_package: "mv TextEditor-continuous-*.tar.xz TextEditor-continuous-linux-x86_64.tar.xz"
             }
           - {  
-              name: "MacOS-amd64",
-              os: macos-latest,
-              QT_INST_DIR: /Users/runner,
-              package_name: TextEditor-macos,
-              cpack_generator: cpack -G DragNDrop,
-              rename_package: "mv TextEditor-continuous-*.dmg TextEditor-continuous-macos.dmg"
+              name: "MacOS-amd64"
+              , os: macos-latest
+              , QT_INST_DIR: /Users/runner
+              , package_name: TextEditor-macos
+              , cpack_generator: cpack -G DragNDrop
+              , rename_package: "mv TextEditor-continuous-*.dmg TextEditor-continuous-macos.dmg"
             }
           - {
-              name: "Windows-x64",
-              WIN_ARCH: "x64",
-              os: windows-latest,
-              QT_INST_DIR: "C:/", QTDIR: "C:/Qt/5.15.2/msvc2019_64", QT_ARCH: win64_msvc2019_64,
-              install_depends: "choco install ninja",
-              cmake_extra_options: "-G Ninja",
-              cpack gnereator: "cpack",
-              bcInstallPrefix: TextEditor-continuous,
-              package_name: TextEditor-win64,
-              rename_package: "mv TextEditor-*.zip TextEditor-continuous-win64.zip"
+              name: "Windows-x64", WIN_ARCH: "x64"
+              , os: windows-latest
+              , QT_INST_DIR: "C:/", QTDIR: "C:/Qt/5.15.2/msvc2019_64", QT_ARCH: win64_msvc2019_64
+              , install_depends: "choco install ninja"
+              , cmake_extra_options: "-G Ninja"
+              , cpack gnereator: "cpack"
+              , bcInstallPrefix: TextEditor-continuous
+              , package_name: TextEditor-win64
+              , rename_package: "mv TextEditor-*.zip TextEditor-continuous-win64.zip"
             }
           - {
-              name: "Windows-x86", 
-              WIN_ARCH: "amd64_x86",
-              os: windows-latest,
-              QT_INST_DIR: "C:/", QTDIR: "C:/Qt/5.15.2/msvc2019_64", QT_ARCH: win32_msvc2019,
-              install_depends: "choco install ninja",
-              cmake_extra_options: "-G Ninja",
-              cpack gnereator: "cpack",
-              bcInstallPrefix: TextEditor-continuous,
-              package_name: TextEditor-win32,
-              rename_package: "ls -R && mv TextEditor-*.zip TextEditor-continuous-win32.zip"
+              name: "Windows-x86"
+              , os: windows-latest, WIN_ARCH: "amd64_x86"
+              , QT_INST_DIR: "C:/", QTDIR: "C:/Qt/5.15.2/msvc2019", QT_ARCH: win32_msvc2019
+              , install_depends: "choco install ninja"
+              , cmake_extra_options: "-G Ninja"
+              , cpack gnereator: "cpack"
+              , bcInstallPrefix: TextEditor-continuous
+              , package_name: TextEditor-win32
+              , rename_package: "ls -R && mv TextEditor-*.zip TextEditor-continuous-win32.zip"
             }
 
     # Steps represent a sequence of tasks that will be executed as part of the job

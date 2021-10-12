@@ -11,7 +11,7 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-find_package(Qt6 COMPONENTS Widgets)
+find_package(Qt5 5.15.2 COMPONENTS Widgets REQUIRED)
 
 add_subdirectory(src)
 
@@ -40,7 +40,7 @@ set_target_properties(TextEditor PROPERTIES
 )
 
 ##CPack
-get_target_property(_qmake_executable Qt6::qmake IMPORTED_LOCATION)
+get_target_property(_qmake_executable Qt5::qmake IMPORTED_LOCATION)
 get_filename_component(_qt_bin_dir "$(_qmake_executable)" DIRECTORY)
 
 set(CPACK_PACKAGE_NAME "TextEditor")

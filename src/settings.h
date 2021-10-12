@@ -6,6 +6,8 @@
 #include <QSettings>
 #include <QFile>
 #include <QVariant>
+#include <QDebug>
+#include <QTextStream>
 
 
 class QSettings;
