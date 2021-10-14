@@ -6,9 +6,9 @@ name: "CI/CD"
 on:
   # Triggers the workflow on push or pull request events but only for the main branch
   push:
-    branches: [ main ]
+    branches: [ main, githubactions ]
   pull_request:
-    branches: [ main ]
+    branches: [ main, githubactions ]
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
@@ -39,7 +39,7 @@ jobs:
               , bcInstallPrefix: /usr
               , cpack_generator: cpack
               , package_name: appdir
-              , rename_package: "mv TextEditor-continuous-*.tar.xz TextEditor-continuous-linux-x86_64.tar.xz"
+              , rename_package: "mv TextEditor-*.tar.xz TextEditor-continuous-linux-x86_64.tar.xz"
             }
           - {  
               name: "MacOS-amd64"
@@ -47,7 +47,7 @@ jobs:
               , QT_INST_DIR: /Users/runner
               , package_name: TextEditor-macos
               , cpack_generator: cpack -G DragNDrop
-              , rename_package: "mv TextEditor-continuous-*.dmg TextEditor-continuous-macos.dmg"
+              , rename_package: "mv TextEditor-*.dmg TextEditor-continuous-macos.dmg"
             }
           - {
               name: "Windows-x64", WIN_ARCH: "x64"
