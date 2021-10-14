@@ -47,7 +47,7 @@ jobs:
               , QT_INST_DIR: /Users/runner
               , package_name: TextEditor-macos
               , cpack_generator: cpack -G DragNDrop
-              , rename_package: "mv TextEditor-continuous-*.dmg TextEditor-continuous-macos.dmg"
+              , rename_package: "mv TextEditor-*.dmg TextEditor-continuous-macos.dmg"
             }
           - {
               name: "Windows-x64", WIN_ARCH: "x64"
