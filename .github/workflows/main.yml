@@ -39,7 +39,7 @@ jobs:
               , bcInstallPrefix: /usr
               , cpack_generator: cpack
               , package_name: appdir
-              , rename_package: "mv TextEditor-continuous-*.tar.xz TextEditor-continuous-linux-x86_64.tar.xz"
+              , rename_package: "mv TextEditor-*.tar.xz TextEditor-continuous-linux-x86_64.tar.xz"
             }
           - {  
               name: "MacOS-amd64"
