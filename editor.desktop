@@ -1,7 +1,7 @@
 [Desktop Entry]
 Categories=Utility;
 Exec=TextEditor
-Icon=default
+Icon=editor
 Name=TextEditor
 Terminal=false
 Type=Application
